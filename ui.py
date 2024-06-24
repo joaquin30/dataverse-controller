@@ -5,13 +5,12 @@ class UIManager:
     HEIGHT = 720
 
     def __init__(self):
-        pass
+        self.tabs_by_index = {}
+        self.tabs_by_id = {}
 
     def connect_managers(self, conn_manager, data_manager):
         self.conn_manager = conn_manager
         self.data_manager = data_manager
-        self.tabs_by_index = {}
-        self.tabs_by_id = {}
 
     def run(self):
         dpg.create_context()
@@ -166,7 +165,9 @@ class TabManager:
                 metric = dpg.add_combo(items=["euclidean", "manhattan", "cosine", "correlation"], default_value="euclidean", width=self.PARAMETER_WIDTH)
                 dpg.add_text("metric")
 
-            dpg.add_button(label="Aplicar", callback=lambda: self.apply_umap(dpg.get_value(n_neighbors), dpg.get_value(min_dist), dpg.get_value(metric)))
+            dpg.add_button(label="Aplicar", callback=lambda: self.apply_umap(dpg.get_value(n_neighbors),
+                                                                             dpg.get_value(min_dist),
+                                                                             dpg.get_value(metric)))
     
     def create_tsne(self, parent):
         with dpg.group(parent=parent):
@@ -178,7 +179,10 @@ class TabManager:
                 metric = dpg.add_combo(items=["euclidean", "manhattan", "cosine", "correlation"], default_value="euclidean", width=self.PARAMETER_WIDTH)
                 dpg.add_text("metric")
 
-            dpg.add_button(label="Aplicar", callback=lambda: self.apply_tsne(dpg.get_value(learning_rate), dpg.get_value(perplexity), dpg.get_value(early_exaggeration), dpg.get_value(metric)))
+            dpg.add_button(label="Aplicar", callback=lambda: self.apply_tsne(dpg.get_value(learning_rate),
+                                                                             dpg.get_value(perplexity),
+                                                                             dpg.get_value(early_exaggeration),
+                                                                             dpg.get_value(metric)))
 
     def create_pca(self, parent):
         with dpg.group(parent=parent):
@@ -189,7 +193,9 @@ class TabManager:
                 svd_solver = dpg.add_combo(items=["auto", "full", "arpack", "randomized"], default_value="auto", width=self.PARAMETER_WIDTH)
                 dpg.add_text("svd_solver")
 
-            dpg.add_button(label="Aplicar", callback=lambda: self.apply_pca(dpg.get_value(whiten), dpg.get_value(tolerance), dpg.get_value(svd_solver)))
+            dpg.add_button(label="Aplicar", callback=lambda: self.apply_pca(dpg.get_value(whiten),
+                                                                            dpg.get_value(tolerance),
+                                                                            dpg.get_value(svd_solver)))
 
     def apply_umap(self, n_neighbors, min_dist, metric):
         self.xdata, self.ydata = self.data_manager.apply_umap(self.index, n_neighbors, min_dist, metric)
@@ -222,7 +228,10 @@ class TabManager:
                 dpg.add_text("cluster_selection_method")
             
             with dpg.group(horizontal=True):
-                dpg.add_button(label="Aplicar", callback=lambda: self.apply_hdbscan(min_cluster_size, min_samples, cluster_selection_epsilon, cluster_selection_method))
+                dpg.add_button(label="Aplicar", callback=lambda: self.apply_hdbscan(dpg.get_value(min_cluster_size),
+                                                                                    dpg.get_value(min_samples),
+                                                                                    dpg.get_value(cluster_selection_epsilon),
+                                                                                    dpg.get_value(cluster_selection_method)))
                 dpg.add_button(label="Limpiar clustering", callback=self.clear_clustering)
     
     def create_kmeans(self, parent):
@@ -238,7 +247,10 @@ class TabManager:
                 dpg.add_text("algorithm")
 
             with dpg.group(horizontal=True):
-                dpg.add_button(label="Aplicar", callback=lambda: self.apply_kmeans(n_clusters, max_iter, init, algorithm))
+                dpg.add_button(label="Aplicar", callback=lambda: self.apply_kmeans(dpg.get_value(n_clusters),
+                                                                                   dpg.get_value(max_iter),
+                                                                                   dpg.get_value(init),
+                                                                                   dpg.get_value(algorithm)))
                 dpg.add_button(label="Limpiar clustering", callback=self.clear_clustering)
 
     def apply_hdbscan(self, min_cluster_size, min_samples, cluster_selection_epsilon, cluster_selection_method):
