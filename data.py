@@ -1,4 +1,8 @@
 import numpy as np
+from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
+from umap import UMAP
+
 
 class DataManager():
     def __init__(self):
@@ -21,7 +25,11 @@ class DataManager():
     def apply_umap(self, workspace_id: int, n_neighbors: int, min_dist: float, metric: str) -> tuple[list[float], list[float]]:
         return np.random.rand(100).tolist(), np.random.rand(100).tolist()
     
-    # TODO otros metodos
+    def apply_tsne(self, workspace_id: int, learning_rate: float, perplexity: float, early_exaggeration: float, metric: str) -> tuple[list[float], list[float]]:
+        return np.random.rand(100).tolist(), np.random.rand(100).tolist()
+    
+    def apply_pca(self, workspace_id: int, whiten: bool, tolerance: float, svd_solver: str) -> tuple[list[float], list[float]]:
+        return np.random.rand(100).tolist(), np.random.rand(100).tolist()
     
     ### CLUSTERING ###
     # Aplica <METODO> a los componentes X y Y, envia los labels al navegador

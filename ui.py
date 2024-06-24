@@ -105,6 +105,10 @@ class TabManager:
                     with dpg.group() as cell:
                         if algorithm == "UMAP":
                             self.create_umap(cell)
+                        elif algorithm == "T-SNE":
+                            self.create_tsne(cell)
+                        elif algorithm == "PCA":
+                            self.create_pca(cell)
                         else:
                             raise Exception("algoritmo de reduccion de dim no existe")
                         
@@ -161,15 +165,48 @@ class TabManager:
                 dpg.add_text("metric")
 
             dpg.add_button(label="Aplicar", callback=lambda: self.apply_umap(dpg.get_value(n_neighbors), dpg.get_value(min_dist), dpg.get_value(metric)))
-        
+    
+    def create_tsne(self, parent):
+        with dpg.group(parent=parent):
+            dpg.add_text("Parámetros TSNE")
+            learning_rate = dpg.add_input_float(label="learning_rate", default_value=200.0, width=self.PARAMETER_WIDTH)
+            perplexity = dpg.add_input_float(label="perplexity", default_value=30.0, width=self.PARAMETER_WIDTH)
+            early_exaggeration = dpg.add_input_float(label="early_exaggeration", default_value=12.0, width=self.PARAMETER_WIDTH)
+            with dpg.group(horizontal=True):
+                metric = dpg.add_combo(items=["euclidean", "manhattan", "cosine", "correlation"], default_value="euclidean", width=self.PARAMETER_WIDTH)
+                dpg.add_text("metric")
+
+            dpg.add_button(label="Aplicar", callback=lambda: self.apply_tsne(dpg.get_value(learning_rate), dpg.get_value(perplexity), dpg.get_value(early_exaggeration), dpg.get_value(metric)))
+
+    def create_pca(self, parent):
+        with dpg.group(parent=parent):
+            dpg.add_text("Parámetros PCA")
+            whiten = dpg.add_checkbox(label="whiten", default_value=True) # width=self.PARAMETER_WIDTH produce an error
+            tolerance = dpg.add_input_float(label="tolerance", default_value=0.0, width=self.PARAMETER_WIDTH)
+            with dpg.group(horizontal=True):
+                svd_solver = dpg.add_combo(items=["auto", "full", "arpack", "randomized"], default_value="auto", width=self.PARAMETER_WIDTH)
+                dpg.add_text("svd_solver")
+
+            dpg.add_button(label="Aplicar", callback=lambda: self.apply_pca(dpg.get_value(whiten), dpg.get_value(tolerance), dpg.get_value(svd_solver)))
+
     def apply_umap(self, n_neighbors, min_dist, metric):
         self.xdata, self.ydata = self.data_manager.apply_umap(self.index, n_neighbors, min_dist, metric)
         self.labels = [-1 for _ in range(len(self.xdata))]
         self.selected = [False for _ in range(len(self.xdata))]
         self.update_plot()
 
-    # TODO otros metodos de reduccion de dim
+    def apply_tsne(self, learning_rate, perplexity, early_exaggeration, metric):
+        self.xdata, self.ydata = self.data_manager.apply_tsne(self.index, learning_rate, perplexity, early_exaggeration, metric)
+        self.labels = [-1 for _ in range(len(self.xdata))]
+        self.selected = [False for _ in range(len(self.xdata))]
+        self.update_plot()
     
+    def apply_pca(self, whiten, tolerance, svd_solver):
+        self.xdata, self.ydata = self.data_manager.apply_pca(self.index, whiten, tolerance, svd_solver)
+        self.labels = [-1 for _ in range(len(self.xdata))]
+        self.selected = [False for _ in range(len(self.xdata))]
+        self.update_plot()
+
     ### CLUSTERIZACION ###
 
     def create_hdbscan(self, parent):    
