@@ -115,6 +115,8 @@ class TabManager:
                         dpg.add_separator()
                         if clustering == "HDBSCAN":
                             self.create_hdbscan(cell)
+                        elif clustering == "K-means":
+                            self.create_kmeans(cell)
                         else:
                             raise Exception("algoritmo de clusterizacion no existe")
                         
@@ -168,7 +170,7 @@ class TabManager:
     
     def create_tsne(self, parent):
         with dpg.group(parent=parent):
-            dpg.add_text("Parámetros TSNE")
+            dpg.add_text("Parámetros T-SNE")
             learning_rate = dpg.add_input_float(label="learning_rate", default_value=200.0, width=self.PARAMETER_WIDTH)
             perplexity = dpg.add_input_float(label="perplexity", default_value=30.0, width=self.PARAMETER_WIDTH)
             early_exaggeration = dpg.add_input_float(label="early_exaggeration", default_value=12.0, width=self.PARAMETER_WIDTH)
@@ -223,11 +225,29 @@ class TabManager:
                 dpg.add_button(label="Aplicar", callback=lambda: self.apply_hdbscan(min_cluster_size, min_samples, cluster_selection_epsilon, cluster_selection_method))
                 dpg.add_button(label="Limpiar clustering", callback=self.clear_clustering)
     
+    def create_kmeans(self, parent):
+        with dpg.group(parent=parent):
+            dpg.add_text("Parámetros K-Means")
+            n_clusters = dpg.add_input_int(label="n_clusters", default_value=8, width=self.PARAMETER_WIDTH)
+            max_iter = dpg.add_input_int(label="max_iter", default_value=300, width=self.PARAMETER_WIDTH)
+            with dpg.group(horizontal=True):
+                init = dpg.add_combo(items=["k-means++", "random"], default_value="k-means++", width=self.PARAMETER_WIDTH)
+                dpg.add_text("init")
+            with dpg.group(horizontal=True):
+                algorithm = dpg.add_combo(items=["lloyd", "elkan"], default_value="lloyd", width=self.PARAMETER_WIDTH)
+                dpg.add_text("algorithm")
+
+            with dpg.group(horizontal=True):
+                dpg.add_button(label="Aplicar", callback=lambda: self.apply_kmeans(n_clusters, max_iter, init, algorithm))
+                dpg.add_button(label="Limpiar clustering", callback=self.clear_clustering)
+
     def apply_hdbscan(self, min_cluster_size, min_samples, cluster_selection_epsilon, cluster_selection_method):
         self.labels = self.data_manager.apply_hdbscan(self.index, self.xdata, self.ydata, min_cluster_size, min_samples, cluster_selection_epsilon, cluster_selection_method)
         self.update_plot()
-    
-    # TODO otros metodos de clustering
+
+    def apply_kmeans(self, n_clusters, max_iter, init, algorithm):
+        self.labels = self.data_manager.apply_kmeans(self.index, self.xdata, self.ydata, n_clusters, max_iter, init, algorithm)
+        self.update_plot()
     
     def clear_clustering(self):
         self.labels = [-1 for _ in range(len(self.xdata))]

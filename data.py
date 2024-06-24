@@ -2,6 +2,7 @@ import numpy as np
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 from umap import UMAP
+from sklearn.cluster import HDBSCAN, KMeans
 
 
 class DataManager():
@@ -38,4 +39,5 @@ class DataManager():
     def apply_hdbscan(self, workspace_id: int, xdata: list[float], ydata: list[float], min_cluster_size: int, min_samples: int, cluster_selection_epsilon: float, cluster_selection_method: str) -> list[int]:
         return []
 
-    # TODO otros metodos
+    def apply_kmeans(self, workspace_id: int, xdata: list[float], ydata: list[float], n_clusters: int, max_iter: int, init: str, algorithm: str) -> list[int]:
+        return []
