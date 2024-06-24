@@ -1,6 +1,9 @@
 import ui, data, conn
+import msgpack
+import msgpack_numpy as msg_np
 
 def main():
+    msg_np.patch()
     data_manager = data.DataManager()
     conn_manager = conn.ConnManager()
     ui_manager = ui.UIManager()

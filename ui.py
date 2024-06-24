@@ -274,11 +274,11 @@ class TabManager:
                 dpg.add_button(label="Limpiar clustering", callback=self.clear_clustering)
 
     def apply_hdbscan(self, min_cluster_size, min_samples, cluster_selection_epsilon, cluster_selection_method):
-        self.labels = self.data_manager.apply_hdbscan(self.index, self.xdata, self.ydata, min_cluster_size, min_samples, cluster_selection_epsilon, cluster_selection_method)
+        self.labels = self.data_manager.apply_hdbscan(self.index, min_cluster_size, min_samples, cluster_selection_epsilon, cluster_selection_method)
         self.update_plot()
 
     def apply_kmeans(self, n_clusters, max_iter, init, algorithm):
-        self.labels = self.data_manager.apply_kmeans(self.index, self.xdata, self.ydata, n_clusters, max_iter, init, algorithm)
+        self.labels = self.data_manager.apply_kmeans(self.index, n_clusters, max_iter, init, algorithm)
         self.update_plot()
     
     def clear_clustering(self):
