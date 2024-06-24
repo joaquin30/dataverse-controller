@@ -1,5 +1,4 @@
 import dearpygui.dearpygui as dpg
-import sys
 
 class UIManager:
     WIDTH = 1280
