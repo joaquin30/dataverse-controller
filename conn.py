@@ -11,9 +11,9 @@ class ConnManager():
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.bind((self.IP, self.PORT))
         self.socket.listen()
-        # conn_thread = threading.Thread(target=self.receive_messages)
-        # conn_thread.daemon = True
-        # conn_thread.start()
+        conn_thread = threading.Thread(target=self.receive_messages)
+        conn_thread.daemon = True
+        conn_thread.start()
     
     def connect_managers(self, data_manager, ui_manager):
         self.data_manager = data_manager
@@ -67,10 +67,16 @@ class ConnManager():
         except Exception as e:
             print(e)
     
+    def disconnect(self) -> None:
+        try:
+            self.conn.close()
+        except Exception as e:
+            print(e)
+
     def receive_messages(self) -> None:
         while True:
             self.conn, _ = self.socket.accept()
-            # self.ui_manager.set_navigator_status(True)
+            self.ui_manager.set_navigator_status(True)
             print("navegador conectado")
             unpacker = msgpack.Unpacker()
             while True:
@@ -96,4 +102,4 @@ class ConnManager():
 
                     elif msg["type"] == "clear_selection":
                         self.ui_manager.clear_selection(msg["workspace_id"])
-            # self.ui_manager.set_navigator_status(False)
+            self.ui_manager.set_navigator_status(False)

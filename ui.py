@@ -1,4 +1,5 @@
 import dearpygui.dearpygui as dpg
+import sys
 
 class UIManager:
     WIDTH = 1280
@@ -24,31 +25,39 @@ class UIManager:
                 algorithm = dpg.add_combo(items=["PCA", "T-SNE", "UMAP"], default_value="UMAP")
                 dpg.add_text("Algoritmo de clusterización")
                 clustering = dpg.add_combo(items=["K-means", "HDBSCAN"], default_value="HDBSCAN")
+                dpg.add_spacer(height=5)
                 with dpg.group(horizontal=True):
                     dpg.add_button(label="Crear", callback=lambda: self.create_tab(dpg.get_value(algorithm), dpg.get_value(clustering)))
                     dpg.add_button(label="Cancelar", callback=lambda: dpg.configure_item(self.popup_id, show=False))
 
+            with dpg.window(modal=True, no_title_bar=True, show=False) as about:
+                self.about_id = about
+                dpg.add_text("Dataverse Controller")
+                dpg.add_separator()
+                dpg.add_text("Creado por:")
+                dpg.add_text("  - Bruno Fernandez\n  - Fredy Quispe\n  - Joaquin Pino")
+                dpg.add_spacer(height=5)
+                dpg.add_button(label="Salir", callback=lambda: dpg.configure_item(self.about_id, show=False))
+
+            with dpg.menu_bar():
+                with dpg.menu(label="Archivo"):
+                    dpg.add_menu_item(label="Cargar imágenes")
+                    dpg.add_menu_item(label="Crear espacio de trabajo", callback=lambda: dpg.configure_item(self.popup_id, show=True))
+                    dpg.add_menu_item(label="Eliminar espacio de trabajo actual", callback=self.delete_tab)
+                    dpg.add_menu_item(label="Desconectar navegador", callback=self.conn_manager.disconnect)
+
+                with dpg.menu(label="Ayuda"):
+                    dpg.add_menu_item(label="Activar tutorial")
+                    dpg.add_menu_item(label="Abrir manual de uso")
+                    dpg.add_menu_item(label="Acerca de", callback=lambda: dpg.configure_item(self.about_id, show=True))
+            
             with dpg.group(horizontal=True):
                 dpg.add_button(label="Cargar imágenes")
                 dpg.add_button(label="Crear espacio de trabajo", callback=lambda: dpg.configure_item(self.popup_id, show=True))
                 dpg.add_button(label="Eliminar espacio de trabajo actual", callback=self.delete_tab)
 
-            with dpg.menu_bar():
-                with dpg.menu(label="Archivo"):
-                    dpg.add_menu_item(label="Cargar imágenes")
-                    dpg.add_menu_item(label="Salir")
-
-                with dpg.menu(label="Opciones"):
-                    dpg.add_menu_item(label="Crear espacio de trabajo", callback=lambda: dpg.configure_item(self.popup_id, show=True))
-                    dpg.add_menu_item(label="Eliminar espacio de trabajo actual", callback=self.delete_tab)
-                    dpg.add_menu_item(label="Reiniciar conexion con el navegador")
-
-                with dpg.menu(label="Ayuda"):
-                    dpg.add_menu_item(label="Activar tutorial")
-                    dpg.add_menu_item(label="Abrir manual de uso")
-                    dpg.add_menu_item(label="Acerca de")
-
             self.tab_bar_id = dpg.add_tab_bar()
+            self.status_id = dpg.add_text("Navegador desconectado :(")
             self.next_tab_index = 1
 
         dpg.create_viewport(title="Dataverse Controller", width=self.WIDTH, height=self.HEIGHT)
@@ -67,21 +76,28 @@ class UIManager:
         dpg.configure_item(self.popup_id, show=False)
     
     def delete_tab(self):
-        id = dpg.get_value(self.tab_bar_id)
-
-        if id != None:
+        try:
+            id = dpg.get_value(self.tab_bar_id)
             index = self.tabs_by_id[id].get_index()
             self.tabs_by_id[id].delete()
             del self.tabs_by_id[id]
             del self.tabs_by_index[index]
+        except:
+            print("no hay pestañas abiertas")
     
-    def set_selection(self, workspace_id, indexes):
+    def set_selection(self, workspace_id: int, indexes: list[int]):
         if workspace_id in self.tabs_by_index:
             self.tabs_by_index[workspace_id].set_selection(indexes)
     
-    def clear_selection(self, workspace_id):
+    def clear_selection(self, workspace_id: int):
         if workspace_id in self.tabs_by_index:
             self.tabs_by_index[workspace_id].clear_selection()
+    
+    def set_navigator_status(self, status: bool):
+        if status:
+            dpg.set_value(self.status_id, "Navegador conectado :)")
+        else:
+            dpg.set_value(self.status_id, "Navegador desconectado :(")
 
 class TabManager:
     PARAMETER_WIDTH = 150
@@ -122,7 +138,7 @@ class TabManager:
                         dpg.add_separator()
                         dpg.add_text("Imágenes seleccionadas (Navegador)")
                         
-                    with dpg.plot(label="Imágenes en 2D", width=870, height=590):
+                    with dpg.plot(label="Imágenes en 2D", width=870, height=570):
                         self.xaxis = dpg.add_plot_axis(dpg.mvXAxis)
                         with dpg.plot_axis(dpg.mvYAxis) as ax:
                             self.yaxis = ax
@@ -165,6 +181,7 @@ class TabManager:
                 metric = dpg.add_combo(items=["euclidean", "manhattan", "cosine", "correlation"], default_value="euclidean", width=self.PARAMETER_WIDTH)
                 dpg.add_text("metric")
 
+            dpg.add_spacer(height=5)
             dpg.add_button(label="Aplicar", callback=lambda: self.apply_umap(dpg.get_value(n_neighbors),
                                                                              dpg.get_value(min_dist),
                                                                              dpg.get_value(metric)))
@@ -179,6 +196,7 @@ class TabManager:
                 metric = dpg.add_combo(items=["euclidean", "manhattan", "cosine", "correlation"], default_value="euclidean", width=self.PARAMETER_WIDTH)
                 dpg.add_text("metric")
 
+            dpg.add_spacer(height=5)
             dpg.add_button(label="Aplicar", callback=lambda: self.apply_tsne(dpg.get_value(learning_rate),
                                                                              dpg.get_value(perplexity),
                                                                              dpg.get_value(early_exaggeration),
@@ -193,6 +211,7 @@ class TabManager:
                 svd_solver = dpg.add_combo(items=["auto", "full", "arpack", "randomized"], default_value="auto", width=self.PARAMETER_WIDTH)
                 dpg.add_text("svd_solver")
 
+            dpg.add_spacer(height=5)
             dpg.add_button(label="Aplicar", callback=lambda: self.apply_pca(dpg.get_value(whiten),
                                                                             dpg.get_value(tolerance),
                                                                             dpg.get_value(svd_solver)))
@@ -227,6 +246,7 @@ class TabManager:
                 cluster_selection_method = dpg.add_combo(items=["eom", "leaf"], default_value="eom", width=self.PARAMETER_WIDTH)
                 dpg.add_text("cluster_selection_method")
             
+            dpg.add_spacer(height=5)
             with dpg.group(horizontal=True):
                 dpg.add_button(label="Aplicar", callback=lambda: self.apply_hdbscan(dpg.get_value(min_cluster_size),
                                                                                     dpg.get_value(min_samples),
@@ -246,6 +266,7 @@ class TabManager:
                 algorithm = dpg.add_combo(items=["lloyd", "elkan"], default_value="lloyd", width=self.PARAMETER_WIDTH)
                 dpg.add_text("algorithm")
 
+            dpg.add_spacer(height=5)
             with dpg.group(horizontal=True):
                 dpg.add_button(label="Aplicar", callback=lambda: self.apply_kmeans(dpg.get_value(n_clusters),
                                                                                    dpg.get_value(max_iter),
