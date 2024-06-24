@@ -67,26 +67,39 @@ class ConnManager():
         except Exception as e:
             print(e)
     
-    def receive_messages(self) -> None:
-        self.conn, _ = self.socket.accept()
-        print("Navegador conectado")
-        unpacker = msgpack.Unpacker()
-        while True:
-            data = self.conn.recv(512)
-            if not data:
-                break
-            unpacker.feed(data)
-            for msg in unpacker:
-                if msg["type"] == "request_image":
-                    self.conn.sendall(msgpack.packb({
-                        "type": "response_image",
-                        "title": msg["workspace_id"]+"_"+msg["index"],
-                        "image": self.data_manager.request_image(msg["index"]),
-                        "coords": self.ui_manager.request_coords(msg["workspace_id"], msg["index"])
-                    }))
-                    
-                elif msg["type"] == "set_selection":
-                    self.ui_manager.set_selection(msg["workspace_id"], msg["indexes"])
+    def disconnect(self) -> None:
+        try:
+            self.conn.close()
+        except Exception as e:
+            print(e)
 
-                elif msg["type"] == "clear_selection":
-                    self.ui_manager.clear_selection(msg["workspace_id"])
+    def receive_messages(self) -> None:
+        while True:
+            self.conn, _ = self.socket.accept()
+            self.ui_manager.set_navigator_status(True)
+            print("navegador conectado")
+            unpacker = msgpack.Unpacker()
+            while True:
+                data = self.conn.recv(512)
+                if not data:
+                    break
+                unpacker.feed(data)
+                for msg in unpacker:
+                    if msg["type"] == "request_image":
+                        try:
+                            self.conn.sendall(msgpack.packb({
+                                "type": "response_image",
+                                "title": msg["workspace_id"]+"_"+msg["index"],
+                                "image": self.data_manager.request_image(msg["index"]),
+                                "coords": self.ui_manager.request_coords(msg["workspace_id"], msg["index"])
+                            }))
+                        except Exception as e:
+                            print(e)
+                            break
+                        
+                    elif msg["type"] == "set_selection":
+                        self.ui_manager.set_selection(msg["workspace_id"], msg["indexes"])
+
+                    elif msg["type"] == "clear_selection":
+                        self.ui_manager.clear_selection(msg["workspace_id"])
+            self.ui_manager.set_navigator_status(False)
