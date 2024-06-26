@@ -28,7 +28,7 @@ class UIManager:
                 dpg.add_text("Algoritmo de reducción de dim.")
                 algorithm = dpg.add_combo(items=["PCA", "T-SNE", "UMAP"], default_value="UMAP")
                 dpg.add_text("Algoritmo de clusterización")
-                clustering = dpg.add_combo(items=["K-means", "HDBSCAN"], default_value="HDBSCAN")
+                clustering = dpg.add_combo(items=["K-means", "HDBSCAN", "OPTICS", "Spectral"], default_value="HDBSCAN")
                 dpg.add_spacer(height=5)
                 with dpg.group(horizontal=True):
                     dpg.add_button(label="Crear", callback=lambda: self.create_tab(dpg.get_value(algorithm), dpg.get_value(clustering)))
@@ -164,6 +164,10 @@ class TabManager:
                             self.create_hdbscan(cell)
                         elif clustering == "K-means":
                             self.create_kmeans(cell)
+                        elif clustering == "OPTICS":
+                            self.create_optics(cell)
+                        elif clustering == "Spectral":
+                            self.create_spectral(cell)
                         else:
                             raise Exception("algoritmo de clusterizacion no existe")
                         
@@ -401,6 +405,48 @@ class TabManager:
                                                                                    dpg.get_value(algorithm)))
                 dpg.add_button(label="Limpiar clustering", callback=self.clear_clustering)
 
+    def create_optics(self, parent):
+        with dpg.group(parent=parent):
+            dpg.add_text("Parámetros OPTICS")
+            min_samples = dpg.add_input_int(label="min_samples", default_value=5, width=self.PARAMETER_WIDTH)
+            max_eps = dpg.add_input_float(label="max_eps", default_value=1000, width=self.PARAMETER_WIDTH)
+            with dpg.group(horizontal=True):
+                metric = dpg.add_combo(items=["minkowski", "manhattan", "cosine", "correlation"], default_value="minkowski", width=self.PARAMETER_WIDTH)
+                dpg.add_text("metric")
+            with dpg.group(horizontal=True):
+                cluster_method = dpg.add_combo(items=["xi", "dbscan"], default_value="xi", width=self.PARAMETER_WIDTH)
+                dpg.add_text("cluster_method")
+
+            dpg.add_spacer(height=5)
+            with dpg.group(horizontal=True):
+                dpg.add_button(label="Aplicar", callback=lambda: self.apply_optics(dpg.get_value(min_samples),
+                                                                                    dpg.get_value(max_eps),
+                                                                                    dpg.get_value(metric),
+                                                                                    dpg.get_value(cluster_method)))
+                dpg.add_button(label="Limpiar clustering", callback=self.clear_clustering)
+
+    def create_spectral(self, parent):
+        with dpg.group(parent=parent):
+            dpg.add_text("Parámetros Spectral Clustering")
+            n_clusters = dpg.add_input_int(label="n_clusters", default_value=8, width=self.PARAMETER_WIDTH)
+            with dpg.group(horizontal=True):
+                eigen_solver = dpg.add_combo(items=["arpack", "lobpcg", "amg"], default_value="arpack", width=self.PARAMETER_WIDTH)
+                dpg.add_text("eigen_solver")
+            with dpg.group(horizontal=True):
+                affinity = dpg.add_combo(items=["nearest_neighbors", "rbf", "precomputed"], default_value="rbf", width=self.PARAMETER_WIDTH)
+                dpg.add_text("affinity")
+            with dpg.group(horizontal=True):
+                assign_labels = dpg.add_combo(items=["kmeans", "discretize"], default_value="kmeans", width=self.PARAMETER_WIDTH)
+                dpg.add_text("assign_labels")
+
+            dpg.add_spacer(height=5)
+            with dpg.group(horizontal=True):
+                dpg.add_button(label="Aplicar", callback=lambda: self.apply_spectral(dpg.get_value(n_clusters),
+                                                                                    dpg.get_value(eigen_solver),
+                                                                                    dpg.get_value(affinity),
+                                                                                    dpg.get_value(assign_labels)))
+                dpg.add_button(label="Limpiar clustering", callback=self.clear_clustering)
+
     def apply_hdbscan(self, min_cluster_size, min_samples, cluster_selection_epsilon, cluster_selection_method):
         self.labels = self.data_manager.apply_hdbscan(self.index, min_cluster_size, min_samples, cluster_selection_epsilon, cluster_selection_method)
         self.update_plot()
@@ -408,6 +454,14 @@ class TabManager:
 
     def apply_kmeans(self, n_clusters, max_iter, init, algorithm):
         self.labels = self.data_manager.apply_kmeans(self.index, n_clusters, max_iter, init, algorithm)
+        self.update_plot()
+
+    def apply_optics(self, min_samples, cluster_selection_epsilon, metric, cluster_method):
+        self.labels = self.data_manager.apply_optics(self.index, min_samples, cluster_selection_epsilon, metric, cluster_method)
+        self.update_plot()
+
+    def apply_spectral(self, n_clusters, eigen_solver, affinity, assign_labels):
+        self.labels = self.data_manager.apply_spectral(self.index, n_clusters, eigen_solver, affinity, assign_labels)
         self.update_plot()
     
     def clear_clustering(self):

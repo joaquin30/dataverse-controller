@@ -9,7 +9,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.manifold import TSNE
 from sklearn.decomposition import PCA
 from umap import UMAP
-from sklearn.cluster import HDBSCAN, KMeans
+from sklearn.cluster import HDBSCAN, KMeans, OPTICS, SpectralClustering
 
 class DataManager():
     MODEL_PATH = "efficientnet-lite4-11.onnx"
@@ -142,3 +142,15 @@ class DataManager():
         kmeans.fit_predict(self.workspace_data[workspace_id])
         self.conn_manager.update_labels(workspace_id, kmeans.labels_)
         return kmeans.labels_
+    
+    def apply_optics(self, workspace_id: int, min_samples: int, max_eps: float, metric: str, cluster_method: str) -> list[int]:
+        optics = OPTICS(min_samples=min_samples, max_eps=max_eps, metric=metric, cluster_method=cluster_method)
+        optics.fit_predict(self.workspace_data[workspace_id])
+        self.conn_manager.update_labels(workspace_id, optics.labels_)
+        return optics.labels_
+    
+    def apply_spectral(self, workspace_id: int, n_clusters: int, eigen_solver: str, affinity: str, assign_labels: str) -> list[int]:
+        spectral = SpectralClustering(n_clusters=n_clusters, eigen_solver=eigen_solver, affinity=affinity, assign_labels=assign_labels)
+        spectral.fit_predict(self.workspace_data[workspace_id])
+        self.conn_manager.update_labels(workspace_id, spectral.labels_)
+        return spectral.labels_
