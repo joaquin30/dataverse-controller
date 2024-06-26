@@ -10,3 +10,6 @@ def hex_to_float_rgb(hex: str):
 
 def get_colors(length: int) -> list[list[float]]:
     return list(map(lambda x: ImageColor.getcolor(x, "RGB"), cc.glasbey_light[:length]))
+
+def invert_color(color: tuple[int, int, int]):
+    return tuple(map(lambda x: 255 - x, color))

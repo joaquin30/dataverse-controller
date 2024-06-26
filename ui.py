@@ -1,20 +1,24 @@
 import dearpygui.dearpygui as dpg
 import utils
+from PIL import Image
+import numpy as np
 
 class UIManager:
     WIDTH = 1280
     HEIGHT = 720
+    IMAGE_SIZE = (90, 90)
 
     def __init__(self):
+        dpg.create_context()
         self.tabs_by_index = {}
         self.tabs_by_id = {}
+        self.image_ids = []
 
     def connect_managers(self, conn_manager, data_manager):
         self.conn_manager = conn_manager
         self.data_manager = data_manager
 
-    def run(self):
-        dpg.create_context()
+    def run(self):  
         with dpg.window(label="Dataverse controler") as win:
             dpg.set_primary_window(win, True)
             with dpg.window(modal=True, no_title_bar=True, show=False) as popup:
@@ -55,9 +59,9 @@ class UIManager:
                 dpg.add_button(label="Cargar imágenes")
                 dpg.add_button(label="Crear espacio de trabajo", callback=lambda: dpg.configure_item(self.popup_id, show=True))
                 dpg.add_button(label="Eliminar espacio de trabajo actual", callback=self.delete_tab)
+                self.status_id = dpg.add_text("Navegador desconectado :(")
 
             self.tab_bar_id = dpg.add_tab_bar()
-            self.status_id = dpg.add_text("Navegador desconectado :(")
             self.next_tab_index = 1
 
         dpg.create_viewport(title="Dataverse Controller", width=self.WIDTH, height=self.HEIGHT)
@@ -66,10 +70,35 @@ class UIManager:
         dpg.start_dearpygui()
         dpg.destroy_context()
     
+    def create_texture_registry(self, size):
+        print("Cargando imágenes a la GPU")
+        self.images_ids = []
+        texture_data = []
+        for i in range(120 * 120):
+            texture_data.append(1)
+            texture_data.append(0)
+            texture_data.append(0)
+            texture_data.append(1)
+
+        with dpg.texture_registry():
+            # print("hola")
+            for i in range(size):
+                # print(i, self.data_manager.get_path(i))
+                with Image.open(self.data_manager.get_path(i)) as im:
+                    im.thumbnail(self.IMAGE_SIZE)
+                    im = im.convert("RGBA")
+                    a = np.array(im) / 255
+                    # print(a.shape)
+                    image_id = dpg.add_static_texture(width=a.shape[1], height=a.shape[0], default_value=a)
+                    self.image_ids.append(image_id)
+    
+    def get_image_id(self, index: int) -> int:
+        return self.image_ids[index]
+
     def create_tab(self, algorithm, clustering):
         index = self.next_tab_index 
         self.next_tab_index += 1
-        tab = TabManager(self.data_manager, self.conn_manager, index)
+        tab = TabManager(self, self.data_manager, self.conn_manager, index)
         id = tab.create(self.tab_bar_id, algorithm, clustering)
         self.tabs_by_id[id] = tab
         self.tabs_by_index[index] = tab
@@ -101,8 +130,10 @@ class UIManager:
 
 class TabManager:
     PARAMETER_WIDTH = 150
+    IMAGE_COLUMNS = 4
 
-    def __init__(self, data_manager, conn_manager, index):
+    def __init__(self, ui_manager, data_manager, conn_manager, index):
+        self.ui_manager = ui_manager
         self.data_manager = data_manager
         self.conn_manager = conn_manager
         self.xdata = []
@@ -138,8 +169,11 @@ class TabManager:
                         
                         dpg.add_separator()
                         dpg.add_text("Imágenes seleccionadas (Navegador)")
+                        with dpg.group() as table_parent_id:
+                            self.table_parent_id = table_parent_id
+                            self.table_id = dpg.add_table(header_row=False)
                         
-                    with dpg.plot(label="Imágenes en 2D", width=870, height=570):
+                    with dpg.plot(label="Imágenes en 2D", width=870, height=590):
                         self.xaxis = dpg.add_plot_axis(dpg.mvXAxis)
                         self.yaxis = dpg.add_plot_axis(dpg.mvYAxis)
             
@@ -156,64 +190,97 @@ class TabManager:
     def set_selection(self, selected_points):
         for i in selected_points:
             self.selected[i] = True
+        
+        dpg.delete_item(self.table_id)
+        count = 0
+        for point in self.selected:
+            if point:
+                count += 1
+        
+        index = 0
+        with dpg.table(parent=self.table_parent_id, header_row=False, height=290, scrollY=True) as table_id:
+            self.table_id = table_id
+            for i in range(self.IMAGE_COLUMNS):
+                dpg.add_table_column()
+            
+            while index < count:
+                with dpg.table_row():
+                    for i in range(self.IMAGE_COLUMNS):
+                        if index >= count:
+                            break
+                            
+                        dpg.add_image(self.ui_manager.get_image_id(index))
+                        index += 1
 
         self.update_plot()
 
     def clear_selection(self):
-        self.selected = [False for _ in range(len(self.xdata))]
+        self.selected = [False for _ in range(len(self.labels))]
+        dpg.delete_item(self.table_id)
+        self.table_id = dpg.add_table(parent=self.table_parent_id, header_row=False)
         self.update_plot()
 
     def update_plot(self):
         for id in self.scatters:
             dpg.delete_item(id)
 
-        colors = utils.get_colors(max(self.labels) + 1)
         self.scatters = []
+        colors = utils.get_colors(max(self.labels) + 1)
+
+        # No seleccionados
+        xs, ys = self.filter_by_label_and_selection(-1, False)
+        if len(xs) > 0:
+            # Coloreo de outliers (-1)
+            with dpg.theme() as theme:
+                with dpg.theme_component(dpg.mvScatterSeries):
+                    dpg.add_theme_style(dpg.mvPlotStyleVar_Marker, dpg.mvPlotMarker_Circle, category=dpg.mvThemeCat_Plots)
+                    dpg.add_theme_color(dpg.mvPlotCol_MarkerFill, (255, 255, 255), category=dpg.mvThemeCat_Plots)
+                    dpg.add_theme_color(dpg.mvPlotCol_MarkerOutline, (255, 255, 255), category=dpg.mvThemeCat_Plots)
+
+            scatter = dpg.add_scatter_series(xs, ys, parent=self.yaxis)
+            dpg.bind_item_theme(scatter, theme)
+            self.scatters.append(scatter)
+        
+        for label in range(len(colors)):
+            xs, ys = self.filter_by_label_and_selection(label, False)
+            if len(xs) > 0:
+                with dpg.theme() as theme:
+                    with dpg.theme_component(dpg.mvScatterSeries):
+                        dpg.add_theme_style(dpg.mvPlotStyleVar_Marker, dpg.mvPlotMarker_Circle, category=dpg.mvThemeCat_Plots)
+                        dpg.add_theme_color(dpg.mvPlotCol_MarkerFill, colors[label], category=dpg.mvThemeCat_Plots)
+                        dpg.add_theme_color(dpg.mvPlotCol_MarkerOutline, colors[label], category=dpg.mvThemeCat_Plots)
+
+                scatter = dpg.add_scatter_series(xs, ys, parent=self.yaxis)
+                dpg.bind_item_theme(scatter, theme)
+                self.scatters.append(scatter)
+
+        # Seleccionados
+        xs, ys = self.filter_by_label_and_selection(-1, True)
+        if len(xs) > 0:
+            with dpg.theme() as theme:
+                with dpg.theme_component(dpg.mvScatterSeries):
+                    dpg.add_theme_style(dpg.mvPlotStyleVar_Marker, dpg.mvPlotMarker_Diamond, category=dpg.mvThemeCat_Plots)
+                    dpg.add_theme_style(dpg.mvPlotStyleVar_MarkerSize, 7, category=dpg.mvThemeCat_Plots)
+                    dpg.add_theme_color(dpg.mvPlotCol_MarkerFill, (255, 255, 255), category=dpg.mvThemeCat_Plots)
+                    dpg.add_theme_color(dpg.mvPlotCol_MarkerOutline, (0, 0, 0), category=dpg.mvThemeCat_Plots)
+
+            scatter = dpg.add_scatter_series(xs, ys, parent=self.yaxis)
+            dpg.bind_item_theme(scatter, theme)
+            self.scatters.append(scatter)
+        
         for label in range(len(colors)):
             xs, ys = self.filter_by_label_and_selection(label, True)
             if len(xs) > 0:
                 with dpg.theme() as theme:
                     with dpg.theme_component(dpg.mvScatterSeries):
-                        dpg.add_theme_color(dpg.mvPlotCol_Line, colors[label], category=dpg.mvThemeCat_Plots)
-                        dpg.add_theme_style(dpg.mvPlotStyleVar_Marker, dpg.mvPlotMarker_Cross, category=dpg.mvThemeCat_Plots)
+                        dpg.add_theme_style(dpg.mvPlotStyleVar_Marker, dpg.mvPlotMarker_Diamond, category=dpg.mvThemeCat_Plots)
+                        dpg.add_theme_style(dpg.mvPlotStyleVar_MarkerSize, 7, category=dpg.mvThemeCat_Plots)
+                        dpg.add_theme_color(dpg.mvPlotCol_MarkerFill, colors[label], category=dpg.mvThemeCat_Plots)
+                        dpg.add_theme_color(dpg.mvPlotCol_MarkerOutline, (255, 255, 255), category=dpg.mvThemeCat_Plots)
 
                 scatter = dpg.add_scatter_series(xs, ys, parent=self.yaxis)
                 dpg.bind_item_theme(scatter, theme)
                 self.scatters.append(scatter)
-
-            xs, ys = self.filter_by_label_and_selection(label, False)
-            if len(xs) > 0:
-                with dpg.theme() as theme:
-                    with dpg.theme_component(dpg.mvScatterSeries):
-                        dpg.add_theme_color(dpg.mvPlotCol_Line, colors[label], category=dpg.mvThemeCat_Plots)
-                        dpg.add_theme_style(dpg.mvPlotStyleVar_Marker, dpg.mvPlotMarker_Circle, category=dpg.mvThemeCat_Plots)
-
-                scatter = dpg.add_scatter_series(xs, ys, parent=self.yaxis)
-                dpg.bind_item_theme(scatter, theme)
-                self.scatters.append(scatter)
-        
-        # Coloreo de outliers (-1)
-        xs, ys = self.filter_by_label_and_selection(-1, True)
-        if len(xs) > 0:
-            with dpg.theme() as theme:
-                with dpg.theme_component(dpg.mvScatterSeries):
-                    dpg.add_theme_color(dpg.mvPlotCol_Line, (255, 255, 255), category=dpg.mvThemeCat_Plots)
-                    dpg.add_theme_style(dpg.mvPlotStyleVar_Marker, dpg.mvPlotMarker_Cross, category=dpg.mvThemeCat_Plots)
-
-            scatter = dpg.add_scatter_series(xs, ys, parent=self.yaxis)
-            dpg.bind_item_theme(scatter, theme)
-            self.scatters.append(scatter)
-
-        xs, ys = self.filter_by_label_and_selection(-1, False)
-        if len(xs) > 0:
-            with dpg.theme() as theme:
-                with dpg.theme_component(dpg.mvScatterSeries):
-                    dpg.add_theme_color(dpg.mvPlotCol_Line, (255, 255, 255), category=dpg.mvThemeCat_Plots)
-                    dpg.add_theme_style(dpg.mvPlotStyleVar_Marker, dpg.mvPlotMarker_Circle, category=dpg.mvThemeCat_Plots)
-
-            scatter = dpg.add_scatter_series(xs, ys, parent=self.yaxis)
-            dpg.bind_item_theme(scatter, theme)
-            self.scatters.append(scatter)
 
         dpg.fit_axis_data(self.xaxis)
         dpg.fit_axis_data(self.yaxis)
@@ -273,23 +340,26 @@ class TabManager:
                                                                             dpg.get_value(tolerance),
                                                                             dpg.get_value(svd_solver)))
 
+    def clear_plot(self):
+        if len(self.labels) == 0:
+            self.labels = [-1 for _ in range(len(self.xdata))]
+            self.selected = [False for _ in range(len(self.xdata))]
+            self.update_plot()
+        else:
+            self.clear_clustering()
+            self.clear_selection()
+
     def apply_umap(self, n_neighbors, min_dist, metric):
         self.xdata, self.ydata = self.data_manager.apply_umap(self.index, n_neighbors, min_dist, metric)
-        self.labels = [-1 for _ in range(len(self.xdata))]
-        self.selected = [False for _ in range(len(self.xdata))]
-        self.update_plot()
+        self.clear_plot()
 
     def apply_tsne(self, learning_rate, perplexity, early_exaggeration, metric):
         self.xdata, self.ydata = self.data_manager.apply_tsne(self.index, learning_rate, perplexity, early_exaggeration, metric)
-        self.labels = [-1 for _ in range(len(self.xdata))]
-        self.selected = [False for _ in range(len(self.xdata))]
-        self.update_plot()
+        self.clear_plot()
     
     def apply_pca(self, whiten, tolerance, svd_solver):
         self.xdata, self.ydata = self.data_manager.apply_pca(self.index, whiten, tolerance, svd_solver)
-        self.labels = [-1 for _ in range(len(self.xdata))]
-        self.selected = [False for _ in range(len(self.xdata))]
-        self.update_plot()
+        self.clear_plot()
 
     ### CLUSTERIZACION ###
 
@@ -334,6 +404,7 @@ class TabManager:
     def apply_hdbscan(self, min_cluster_size, min_samples, cluster_selection_epsilon, cluster_selection_method):
         self.labels = self.data_manager.apply_hdbscan(self.index, min_cluster_size, min_samples, cluster_selection_epsilon, cluster_selection_method)
         self.update_plot()
+        self.set_selection(range(0, 200, 7))
 
     def apply_kmeans(self, n_clusters, max_iter, init, algorithm):
         self.labels = self.data_manager.apply_kmeans(self.index, n_clusters, max_iter, init, algorithm)

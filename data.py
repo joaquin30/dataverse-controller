@@ -19,8 +19,6 @@ class DataManager():
         self.workspace_labels = {}
         self.folder_path = ""
         self.dataset = {}
-        # Por ahora hardcodeado
-        self.load_folder("Top20")
     
     def init_dataset(self, files):
         self.dataset = {
@@ -32,6 +30,8 @@ class DataManager():
     def connect_managers(self, conn_manager, ui_manager) -> None:
         self.conn_manager = conn_manager
         self.ui_manager = ui_manager
+        # Por ahora hardcodeado
+        self.load_folder("Top20")
     
     def load_folder(self, folder_path: str) -> None:
         # Check if folder exists
@@ -48,6 +48,7 @@ class DataManager():
                 self.dataset = msgpack.load(file)
         
         self.folder_path = folder_path
+        self.ui_manager.create_texture_registry(self.dataset["length"])
 
     def get_files_from(self, folder_path, extensions):
         files = []
@@ -95,6 +96,9 @@ class DataManager():
         with open(os.path.join(folder_path, "dataset.mpack"), "wb") as file:
             msgpack.dump(self.dataset, file)
 
+    def get_path(self, index: int) -> str:
+        return os.path.join(self.folder_path, self.dataset["filenames"][index])
+    
     ### REDUCCION DE DIM ###
     # Aplica <METODO> al dataset, envia los puntos 3D al navegador
     # y devuelve los puntos 2D en dos listas con el componente X y Y respectivamente
@@ -130,11 +134,11 @@ class DataManager():
     def apply_hdbscan(self, workspace_id: int, min_cluster_size: int, min_samples: int, cluster_selection_epsilon: float, cluster_selection_method: str) -> list[int]:
         hdbscan = HDBSCAN(min_cluster_size=min_cluster_size, min_samples=min_samples, cluster_selection_epsilon=cluster_selection_epsilon, cluster_selection_method=cluster_selection_method)
         hdbscan.fit_predict(self.workspace_data[workspace_id])
-        self.conn_manager.update_labels(hdbscan.labels_)
+        self.conn_manager.update_labels(workspace_id, hdbscan.labels_)
         return hdbscan.labels_
 
     def apply_kmeans(self, workspace_id: int, n_clusters: int, max_iter: int, init: str, algorithm: str) -> list[int]:
         kmeans = KMeans(n_clusters=n_clusters, max_iter=max_iter, init=init, algorithm=algorithm)
         kmeans.fit_predict(self.workspace_data[workspace_id])
-        self.conn_manager.update_labels(kmeans.labels_)
+        self.conn_manager.update_labels(workspace_id, kmeans.labels_)
         return kmeans.labels_
