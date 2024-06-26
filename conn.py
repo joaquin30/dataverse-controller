@@ -5,7 +5,7 @@ import threading
 import utils
 
 class ConnManager():
-    IP = "127.0.0.1"
+    IP = "192.168.103.100"
     PORT = 5000
 
     def __init__(self):
@@ -27,7 +27,7 @@ class ConnManager():
                 "workspace_id": workspace_id,
             }))
         except Exception as e:
-            print(e)
+            print("create_workspace:", e)
 
     def delete_workspace(self, workspace_id: int) -> None:
         try:
@@ -36,7 +36,7 @@ class ConnManager():
                 "workspace_id": workspace_id,
             }))
         except Exception as e:
-            print(e)
+            print("delete_workspace:", e)
 
     def update_points(self, workspace_id: int, points: np.ndarray) -> None:
         try:
@@ -46,7 +46,7 @@ class ConnManager():
                 "points": points.tolist(),
             }))
         except Exception as e:
-            print(e)
+            print("update_points:", e)
 
     def update_labels(self, workspace_id: int, labels: list[int]) -> None:
         try:
@@ -57,7 +57,7 @@ class ConnManager():
                 "colors": utils.get_normalized_colors(max(labels) + 1),
             }))
         except Exception as e:
-            print(e)
+            print("update_labels:", e)
     
     def remove_point_selection(self, workspace_id: int, index: int) -> None:
         try:
@@ -67,13 +67,13 @@ class ConnManager():
                 "index": index,
             }))
         except Exception as e:
-            print(e)
+            print("remove_point_selection:", e)
     
     def disconnect(self) -> None:
         try:
             self.conn.close()
         except Exception as e:
-            print(e)
+            print("disconnect:", e)
 
     def receive_messages(self) -> None:
         while True:
@@ -96,7 +96,7 @@ class ConnManager():
                                 "coords": self.data_manager.get_coords(msg["workspace_id"], msg["index"]).tolist(),
                             }))
                         except Exception as e:
-                            print(e)
+                            print("response_image:", e)
                         
                     elif msg["type"] == "set_selection":
                         self.ui_manager.set_selection(msg["workspace_id"], msg["indexes"])

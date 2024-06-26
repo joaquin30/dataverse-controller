@@ -408,8 +408,8 @@ class TabManager:
     def create_optics(self, parent):
         with dpg.group(parent=parent):
             dpg.add_text("Parámetros OPTICS")
-            min_samples = dpg.add_input_int(label="min_samples", default_value=5, width=self.PARAMETER_WIDTH)
-            max_eps = dpg.add_input_float(label="max_eps", default_value=1000, width=self.PARAMETER_WIDTH)
+            min_samples = dpg.add_input_int(label="min_samples", default_value=5, width=self.PARAMETER_WIDTH, min_value=2, min_clamped=True)
+            max_eps = dpg.add_input_float(label="max_eps", default_value=float("inf"), width=self.PARAMETER_WIDTH)
             with dpg.group(horizontal=True):
                 metric = dpg.add_combo(items=["minkowski", "manhattan", "cosine", "correlation"], default_value="minkowski", width=self.PARAMETER_WIDTH)
                 dpg.add_text("metric")

@@ -1,6 +1,7 @@
 import numpy as np
 
 import os
+import io
 import msgpack
 from datetime import datetime
 from PIL import Image
@@ -105,7 +106,9 @@ class DataManager():
     def get_image(self, index: int) -> bytearray:
         with Image.open(self.get_path(index)) as im:
             im.thumbnail((256, 256))
-            return im.getdata()
+            data = io.BytesIO()
+            im.save(data, format="JPEG")
+            return data.getvalue()
     
     def get_coords(self, workspace_id: int, index: int) -> np.ndarray:
         return self.workspace_data[workspace_id][index]
@@ -131,11 +134,11 @@ class DataManager():
         return data2d[:, 0].tolist(), data2d[:, 1].tolist()
     
     def apply_pca(self, workspace_id: int, whiten: bool, tolerance: float, svd_solver: str) -> tuple[list[float], list[float]]:
-        pca = PCA(n_components=3, whiten=whiten, tol=tolerance, svd_solver=svd_solver)
+        pca = PCA(n_components=3, whiten=not whiten, tol=tolerance, svd_solver=svd_solver)
         self.workspace_data[workspace_id] = pca.fit_transform(self.dataset["vectors"])
         self.conn_manager.update_points(workspace_id, self.workspace_data[workspace_id]) 
         # Generando puntos 2D para la UI
-        data2d = PCA(n_components=2, whiten=whiten, tol=tolerance, svd_solver=svd_solver).fit_transform(self.dataset["vectors"])
+        data2d = PCA(n_components=2, whiten=not whiten, tol=tolerance, svd_solver=svd_solver).fit_transform(self.dataset["vectors"])
         return data2d[:, 0].tolist(), data2d[:, 1].tolist()
     
     ### CLUSTERING ###
