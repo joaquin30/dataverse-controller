@@ -38,7 +38,7 @@ class ConnManager():
         except Exception as e:
             print(e)
 
-    def update_points(self, workspace_id: int, points: np.array) -> None:
+    def update_points(self, workspace_id: int, points: np.ndarray) -> None:
         try:
             self.conn.sendall(msgpack.packb({
                 "type": "update_points",

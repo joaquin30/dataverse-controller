@@ -107,9 +107,8 @@ class DataManager():
             im.thumbnail((256, 256))
             return im.getdata()
     
-    def get_coords(self, workspace_id: int, index: int) -> np.array:
-        if workspace_id in self.workspace_data:
-            return self.workspace_data[workspace_id][index]
+    def get_coords(self, workspace_id: int, index: int) -> np.ndarray:
+        return self.workspace_data[workspace_id][index]
         
     ### REDUCCION DE DIM ###
     # Aplica <METODO> al dataset, envia los puntos 3D al navegador
