@@ -130,9 +130,11 @@ class DataManager():
     def apply_hdbscan(self, workspace_id: int, min_cluster_size: int, min_samples: int, cluster_selection_epsilon: float, cluster_selection_method: str) -> list[int]:
         hdbscan = HDBSCAN(min_cluster_size=min_cluster_size, min_samples=min_samples, cluster_selection_epsilon=cluster_selection_epsilon, cluster_selection_method=cluster_selection_method)
         hdbscan.fit_predict(self.workspace_data[workspace_id])
+        self.conn_manager.update_labels(kmeans.labels_)
         return hdbscan.labels_
 
     def apply_kmeans(self, workspace_id: int, n_clusters: int, max_iter: int, init: str, algorithm: str) -> list[int]:
         kmeans = KMeans(n_clusters=n_clusters, max_iter=max_iter, init=init, algorithm=algorithm)
         kmeans.fit_predict(self.workspace_data[workspace_id])
+        self.conn_manager.update_labels(kmeans.labels_)
         return kmeans.labels_

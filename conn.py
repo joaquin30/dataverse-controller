@@ -2,6 +2,7 @@ import numpy as np
 import msgpack
 import socket
 import threading
+import utils
 
 class ConnManager():
     IP = "127.0.0.1"
@@ -53,6 +54,7 @@ class ConnManager():
                 "type": "update_labels",
                 "workspace_id": workspace_id,
                 "labels": labels,
+                "colors": utils.get_normalized_colors(max(labels) + 1),
             }))
         except Exception as e:
             print(e)
@@ -89,7 +91,7 @@ class ConnManager():
                         try:
                             self.conn.sendall(msgpack.packb({
                                 "type": "response_image",
-                                "title": msg["workspace_id"]+"_"+msg["index"],
+                                "title": self.data_manager.request_filename(msg["index"]),
                                 "image": self.data_manager.request_image(msg["index"]),
                                 "coords": self.ui_manager.request_coords(msg["workspace_id"], msg["index"])
                             }))

@@ -1,4 +1,5 @@
 import dearpygui.dearpygui as dpg
+import utils
 
 class UIManager:
     WIDTH = 1280
@@ -109,6 +110,7 @@ class TabManager:
         self.labels = []
         self.selected = []
         self.index = index
+        self.scatters = []
     
     def create(self, parent, algorithm, clustering):
         with dpg.tab(label=f"Espacio de trabajo {self.index} ({algorithm} - {clustering})", parent=parent) as tab:
@@ -139,9 +141,7 @@ class TabManager:
                         
                     with dpg.plot(label="Imágenes en 2D", width=870, height=570):
                         self.xaxis = dpg.add_plot_axis(dpg.mvXAxis)
-                        with dpg.plot_axis(dpg.mvYAxis) as ax:
-                            self.yaxis = ax
-                            self.plot_id = dpg.add_scatter_series([], [])
+                        self.yaxis = dpg.add_plot_axis(dpg.mvYAxis)
             
             self.id = tab
             return tab
@@ -164,11 +164,69 @@ class TabManager:
         self.update_plot()
 
     def update_plot(self):
-        # TODO colores y seleccion
-        dpg.set_value(self.plot_id, [self.xdata, self.ydata])
+        for id in self.scatters:
+            dpg.delete_item(id)
+
+        colors = utils.get_colors(max(self.labels) + 1)
+        self.scatters = []
+        for label in range(len(colors)):
+            xs, ys = self.filter_by_label_and_selection(label, True)
+            if len(xs) > 0:
+                with dpg.theme() as theme:
+                    with dpg.theme_component(dpg.mvScatterSeries):
+                        dpg.add_theme_color(dpg.mvPlotCol_Line, colors[label], category=dpg.mvThemeCat_Plots)
+                        dpg.add_theme_style(dpg.mvPlotStyleVar_Marker, dpg.mvPlotMarker_Cross, category=dpg.mvThemeCat_Plots)
+
+                scatter = dpg.add_scatter_series(xs, ys, parent=self.yaxis)
+                dpg.bind_item_theme(scatter, theme)
+                self.scatters.append(scatter)
+
+            xs, ys = self.filter_by_label_and_selection(label, False)
+            if len(xs) > 0:
+                with dpg.theme() as theme:
+                    with dpg.theme_component(dpg.mvScatterSeries):
+                        dpg.add_theme_color(dpg.mvPlotCol_Line, colors[label], category=dpg.mvThemeCat_Plots)
+                        dpg.add_theme_style(dpg.mvPlotStyleVar_Marker, dpg.mvPlotMarker_Circle, category=dpg.mvThemeCat_Plots)
+
+                scatter = dpg.add_scatter_series(xs, ys, parent=self.yaxis)
+                dpg.bind_item_theme(scatter, theme)
+                self.scatters.append(scatter)
+        
+        # Coloreo de outliers (-1)
+        xs, ys = self.filter_by_label_and_selection(-1, True)
+        if len(xs) > 0:
+            with dpg.theme() as theme:
+                with dpg.theme_component(dpg.mvScatterSeries):
+                    dpg.add_theme_color(dpg.mvPlotCol_Line, (255, 255, 255), category=dpg.mvThemeCat_Plots)
+                    dpg.add_theme_style(dpg.mvPlotStyleVar_Marker, dpg.mvPlotMarker_Cross, category=dpg.mvThemeCat_Plots)
+
+            scatter = dpg.add_scatter_series(xs, ys, parent=self.yaxis)
+            dpg.bind_item_theme(scatter, theme)
+            self.scatters.append(scatter)
+
+        xs, ys = self.filter_by_label_and_selection(-1, False)
+        if len(xs) > 0:
+            with dpg.theme() as theme:
+                with dpg.theme_component(dpg.mvScatterSeries):
+                    dpg.add_theme_color(dpg.mvPlotCol_Line, (255, 255, 255), category=dpg.mvThemeCat_Plots)
+                    dpg.add_theme_style(dpg.mvPlotStyleVar_Marker, dpg.mvPlotMarker_Circle, category=dpg.mvThemeCat_Plots)
+
+            scatter = dpg.add_scatter_series(xs, ys, parent=self.yaxis)
+            dpg.bind_item_theme(scatter, theme)
+            self.scatters.append(scatter)
+
         dpg.fit_axis_data(self.xaxis)
         dpg.fit_axis_data(self.yaxis)
 
+    def filter_by_label_and_selection(self, label, selected):
+        xs, ys = [], []
+        for i in range(len(self.xdata)):
+            if self.labels[i] == label and self.selected[i] == selected:
+                xs.append(self.xdata[i])
+                ys.append(self.ydata[i])
+        
+        return xs, ys
+    
     ### REDUCCION DIM ###
 
     def create_umap(self, parent):
