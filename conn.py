@@ -53,7 +53,7 @@ class ConnManager():
             self.conn.sendall(msgpack.packb({
                 "type": "update_labels",
                 "workspace_id": workspace_id,
-                "labels": labels,
+                "labels": labels.tolist(),
                 "colors": utils.get_normalized_colors(max(labels) + 1),
             }))
         except Exception as e:
@@ -91,13 +91,12 @@ class ConnManager():
                         try:
                             self.conn.sendall(msgpack.packb({
                                 "type": "response_image",
-                                "title": self.data_manager.request_filename(msg["index"]),
-                                "image": self.data_manager.request_image(msg["index"]),
-                                "coords": self.ui_manager.request_coords(msg["workspace_id"], msg["index"])
+                                "title": self.data_manager.get_filename(msg["index"]),
+                                "image": self.data_manager.get_image(msg["index"]),
+                                "coords": self.data_manager.get_coords(msg["workspace_id"], msg["index"]).tolist(),
                             }))
                         except Exception as e:
                             print(e)
-                            break
                         
                     elif msg["type"] == "set_selection":
                         self.ui_manager.set_selection(msg["workspace_id"], msg["indexes"])

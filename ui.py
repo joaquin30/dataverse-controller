@@ -450,7 +450,6 @@ class TabManager:
     def apply_hdbscan(self, min_cluster_size, min_samples, cluster_selection_epsilon, cluster_selection_method):
         self.labels = self.data_manager.apply_hdbscan(self.index, min_cluster_size, min_samples, cluster_selection_epsilon, cluster_selection_method)
         self.update_plot()
-        self.set_selection(range(0, 200, 7))
 
     def apply_kmeans(self, n_clusters, max_iter, init, algorithm):
         self.labels = self.data_manager.apply_kmeans(self.index, n_clusters, max_iter, init, algorithm)

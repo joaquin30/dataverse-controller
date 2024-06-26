@@ -98,7 +98,19 @@ class DataManager():
 
     def get_path(self, index: int) -> str:
         return os.path.join(self.folder_path, self.dataset["filenames"][index])
+
+    def get_filename(self, index: int) -> str:
+        return self.dataset["filenames"][index]
     
+    def get_image(self, index: int) -> bytearray:
+        with Image.open(self.get_path(index)) as im:
+            im.thumbnail((256, 256))
+            return im.getdata()
+    
+    def get_coords(self, workspace_id: int, index: int) -> np.array:
+        if workspace_id in self.workspace_data:
+            return self.workspace_data[workspace_id][index]
+        
     ### REDUCCION DE DIM ###
     # Aplica <METODO> al dataset, envia los puntos 3D al navegador
     # y devuelve los puntos 2D en dos listas con el componente X y Y respectivamente
