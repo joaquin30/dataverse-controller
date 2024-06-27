@@ -52,7 +52,6 @@ class UIManager:
 
                 with dpg.menu(label="Ayuda"):
                     dpg.add_menu_item(label="Activar tutorial")
-                    dpg.add_menu_item(label="Abrir manual de uso")
                     dpg.add_menu_item(label="Acerca de", callback=lambda: dpg.configure_item(self.about_id, show=True))
             
             with dpg.group(horizontal=True):
@@ -69,7 +68,7 @@ class UIManager:
         dpg.show_viewport()
         dpg.start_dearpygui()
         dpg.destroy_context()
-    
+
     def create_texture_registry(self, size):
         print("Cargando imágenes a la GPU")
         self.images_ids = []
@@ -196,27 +195,39 @@ class TabManager:
             self.selected[i] = True
         
         dpg.delete_item(self.table_id)
-        count = 0
-        for point in self.selected:
-            if point:
-                count += 1
-        
+        indexes = self.get_selection()
         index = 0
         with dpg.table(parent=self.table_parent_id, header_row=False, height=290, scrollY=True) as table_id:
             self.table_id = table_id
             for i in range(self.IMAGE_COLUMNS):
                 dpg.add_table_column()
             
-            while index < count:
+            while index < len(indexes):
                 with dpg.table_row():
                     for i in range(self.IMAGE_COLUMNS):
-                        if index >= count:
+                        if index >= len(indexes):
                             break
-                            
-                        dpg.add_image(self.ui_manager.get_image_id(index))
+                        
+                        dpg.add_image_button(self.ui_manager.get_image_id(indexes[index]),
+                            callback=self.gen_function_for_removing_point_selection(indexes[index]))
                         index += 1
 
         self.update_plot()
+
+    def gen_function_for_removing_point_selection(self, index):
+        def func():
+            self.selected[index] = False
+            self.set_selection([])
+            self.conn_manager.remove_point_selection(self.index, index)
+        return func
+
+    def get_selection(self) -> list[int]:
+        indexes = []
+        for i, v in enumerate(self.selected):
+            if v:
+                indexes.append(i)
+        
+        return indexes
 
     def clear_selection(self):
         self.selected = [False for _ in range(len(self.labels))]
@@ -384,6 +395,11 @@ class TabManager:
                                                                                     dpg.get_value(cluster_selection_epsilon),
                                                                                     dpg.get_value(cluster_selection_method)))
                 dpg.add_button(label="Limpiar clustering", callback=self.clear_clustering)
+            dpg.add_button(label="Aplicar (Solo selección)", callback=lambda: self.apply_hdbscan(dpg.get_value(min_cluster_size),
+                                                                                    dpg.get_value(min_samples),
+                                                                                    dpg.get_value(cluster_selection_epsilon),
+                                                                                    dpg.get_value(cluster_selection_method),
+                                                                                    filter=self.get_selection()))
     
     def create_kmeans(self, parent):
         with dpg.group(parent=parent):
@@ -404,6 +420,11 @@ class TabManager:
                                                                                    dpg.get_value(init),
                                                                                    dpg.get_value(algorithm)))
                 dpg.add_button(label="Limpiar clustering", callback=self.clear_clustering)
+            dpg.add_button(label="Aplicar (Solo selección)", callback=lambda: self.apply_kmeans(dpg.get_value(n_clusters),
+                                                                                   dpg.get_value(max_iter),
+                                                                                   dpg.get_value(init),
+                                                                                   dpg.get_value(algorithm)),
+                                                                                   filter=self.get_selection())
 
     def create_optics(self, parent):
         with dpg.group(parent=parent):
@@ -424,6 +445,11 @@ class TabManager:
                                                                                     dpg.get_value(metric),
                                                                                     dpg.get_value(cluster_method)))
                 dpg.add_button(label="Limpiar clustering", callback=self.clear_clustering)
+            dpg.add_button(label="Aplicar (Solo selección)", callback=lambda: self.apply_optics(dpg.get_value(min_samples),
+                                                                                    dpg.get_value(max_eps),
+                                                                                    dpg.get_value(metric),
+                                                                                    dpg.get_value(cluster_method),
+                                                                                    filter=self.get_selection()))
 
     def create_spectral(self, parent):
         with dpg.group(parent=parent):
@@ -446,23 +472,29 @@ class TabManager:
                                                                                     dpg.get_value(affinity),
                                                                                     dpg.get_value(assign_labels)))
                 dpg.add_button(label="Limpiar clustering", callback=self.clear_clustering)
+            dpg.add_button(label="Aplicar (Solo selección)", callback=lambda: self.apply_spectral(dpg.get_value(n_clusters),
+                                                                                    dpg.get_value(eigen_solver),
+                                                                                    dpg.get_value(affinity),
+                                                                                    dpg.get_value(assign_labels),
+                                                                                    filter=self.get_selection()))
 
-    def apply_hdbscan(self, min_cluster_size, min_samples, cluster_selection_epsilon, cluster_selection_method):
-        self.labels = self.data_manager.apply_hdbscan(self.index, min_cluster_size, min_samples, cluster_selection_epsilon, cluster_selection_method)
+    def apply_hdbscan(self, min_cluster_size, min_samples, cluster_selection_epsilon, cluster_selection_method, filter=[]):
+        self.labels = self.data_manager.apply_hdbscan(self.index, min_cluster_size, min_samples, cluster_selection_epsilon, cluster_selection_method, filter=filter)
         self.update_plot()
 
-    def apply_kmeans(self, n_clusters, max_iter, init, algorithm):
-        self.labels = self.data_manager.apply_kmeans(self.index, n_clusters, max_iter, init, algorithm)
+    def apply_kmeans(self, n_clusters, max_iter, init, algorithm, filter=[]):
+        self.labels = self.data_manager.apply_kmeans(self.index, n_clusters, max_iter, init, algorithm, filter=filter)
         self.update_plot()
 
-    def apply_optics(self, min_samples, cluster_selection_epsilon, metric, cluster_method):
-        self.labels = self.data_manager.apply_optics(self.index, min_samples, cluster_selection_epsilon, metric, cluster_method)
+    def apply_optics(self, min_samples, cluster_selection_epsilon, metric, cluster_method, filter=[]):
+        self.labels = self.data_manager.apply_optics(self.index, min_samples, cluster_selection_epsilon, metric, cluster_method, filter=filter)
         self.update_plot()
 
-    def apply_spectral(self, n_clusters, eigen_solver, affinity, assign_labels):
-        self.labels = self.data_manager.apply_spectral(self.index, n_clusters, eigen_solver, affinity, assign_labels)
+    def apply_spectral(self, n_clusters, eigen_solver, affinity, assign_labels, filter=[]):
+        self.labels = self.data_manager.apply_spectral(self.index, n_clusters, eigen_solver, affinity, assign_labels, filter=filter)
         self.update_plot()
     
     def clear_clustering(self):
         self.labels = [-1 for _ in range(len(self.xdata))]
+        self.conn_manager.update_labels(self.index, np.array(self.labels))
         self.update_plot()

@@ -145,26 +145,90 @@ class DataManager():
     # Aplica <METODO> a los componentes X y Y, envia los labels al navegador
     # y devuelve los mismos labels
 
-    def apply_hdbscan(self, workspace_id: int, min_cluster_size: int, min_samples: int, cluster_selection_epsilon: float, cluster_selection_method: str) -> list[int]:
+    def apply_hdbscan(self, workspace_id: int, min_cluster_size: int, min_samples: int, cluster_selection_epsilon: float, cluster_selection_method: str, filter: list[int] = []) -> list[int]:
         hdbscan = HDBSCAN(min_cluster_size=min_cluster_size, min_samples=min_samples, cluster_selection_epsilon=cluster_selection_epsilon, cluster_selection_method=cluster_selection_method)
         hdbscan.fit_predict(self.workspace_data[workspace_id])
-        self.conn_manager.update_labels(workspace_id, hdbscan.labels_)
-        return hdbscan.labels_
+        labels = np.array(hdbscan.labels_)
+        n_clusters = max(labels) + 1
 
-    def apply_kmeans(self, workspace_id: int, n_clusters: int, max_iter: int, init: str, algorithm: str) -> list[int]:
+        if len(filter) > 0:
+            print(filter)
+            data = []
+            for i in filter:
+                data.append(self.workspace_data[workspace_id][i])
+
+            hdbscan.fit_predict(data)
+            for i in range(len(filter)):
+                if hdbscan.labels_[i] == -1:
+                    labels[i] = -1
+                else:
+                    labels[i] = hdbscan.labels_[i] + n_clusters
+                
+        self.conn_manager.update_labels(workspace_id, labels)
+        return labels
+
+    def apply_kmeans(self, workspace_id: int, n_clusters: int, max_iter: int, init: str, algorithm: str, filter: list[int] = []) -> list[int]:
         kmeans = KMeans(n_clusters=n_clusters, max_iter=max_iter, init=init, algorithm=algorithm)
         kmeans.fit_predict(self.workspace_data[workspace_id])
-        self.conn_manager.update_labels(workspace_id, kmeans.labels_)
-        return kmeans.labels_
+        labels = np.array(kmeans.labels_)
+        n_clusters = max(labels) + 1
+
+        if len(filter) > 0:
+            print(filter)
+            data = []
+            for i in filter:
+                data.append(self.workspace_data[workspace_id][i])
+
+            kmeans.fit_predict(data)
+            for i in range(len(filter)):
+                if kmeans.labels_[i] == -1:
+                    labels[i] = -1
+                else:
+                    labels[i] = kmeans.labels_[i] + n_clusters
+                
+        self.conn_manager.update_labels(workspace_id, labels)
+        return labels
     
-    def apply_optics(self, workspace_id: int, min_samples: int, max_eps: float, metric: str, cluster_method: str) -> list[int]:
+    def apply_optics(self, workspace_id: int, min_samples: int, max_eps: float, metric: str, cluster_method: str, filter: list[int] = []) -> list[int]:
         optics = OPTICS(min_samples=min_samples, max_eps=max_eps, metric=metric, cluster_method=cluster_method)
         optics.fit_predict(self.workspace_data[workspace_id])
-        self.conn_manager.update_labels(workspace_id, optics.labels_)
-        return optics.labels_
+        labels = np.array(optics.labels_)
+        n_clusters = max(labels) + 1
+
+        if len(filter) > 0:
+            print(filter)
+            data = []
+            for i in filter:
+                data.append(self.workspace_data[workspace_id][i])
+
+            optics.fit_predict(data)
+            for i in range(len(filter)):
+                if optics.labels_[i] == -1:
+                    labels[i] = -1
+                else:
+                    labels[i] = optics.labels_[i] + n_clusters
+                
+        self.conn_manager.update_labels(workspace_id, labels)
+        return labels
     
-    def apply_spectral(self, workspace_id: int, n_clusters: int, eigen_solver: str, affinity: str, assign_labels: str) -> list[int]:
+    def apply_spectral(self, workspace_id: int, n_clusters: int, eigen_solver: str, affinity: str, assign_labels: str, filter: list[int] = []) -> list[int]:
         spectral = SpectralClustering(n_clusters=n_clusters, eigen_solver=eigen_solver, affinity=affinity, assign_labels=assign_labels)
         spectral.fit_predict(self.workspace_data[workspace_id])
-        self.conn_manager.update_labels(workspace_id, spectral.labels_)
-        return spectral.labels_
+        labels = np.array(spectral.labels_)
+        n_clusters = max(labels) + 1
+
+        if len(filter) > 0:
+            print(filter)
+            data = []
+            for i in filter:
+                data.append(self.workspace_data[workspace_id][i])
+
+            spectral.fit_predict(data)
+            for i in range(len(filter)):
+                if spectral.labels_[i] == -1:
+                    labels[i] = -1
+                else:
+                    labels[i] = spectral.labels_[i] + n_clusters
+                
+        self.conn_manager.update_labels(workspace_id, labels)
+        return labels

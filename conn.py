@@ -5,7 +5,7 @@ import threading
 import utils
 
 class ConnManager():
-    IP = "192.168.103.100"
+    IP = "127.0.0.1"
     PORT = 5000
 
     def __init__(self):
