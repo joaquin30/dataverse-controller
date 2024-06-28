@@ -31,8 +31,6 @@ class DataManager():
     def connect_managers(self, conn_manager, ui_manager) -> None:
         self.conn_manager = conn_manager
         self.ui_manager = ui_manager
-        # Por ahora hardcodeado
-        self.load_folder("Top20")
     
     def load_folder(self, folder_path: str) -> None:
         # Check if folder exists
@@ -152,7 +150,6 @@ class DataManager():
         n_clusters = max(labels) + 1
 
         if len(filter) > 0:
-            print(filter)
             data = []
             for i in filter:
                 data.append(self.workspace_data[workspace_id][i])
@@ -174,7 +171,6 @@ class DataManager():
         n_clusters = max(labels) + 1
 
         if len(filter) > 0:
-            print(filter)
             data = []
             for i in filter:
                 data.append(self.workspace_data[workspace_id][i])
@@ -196,7 +192,6 @@ class DataManager():
         n_clusters = max(labels) + 1
 
         if len(filter) > 0:
-            print(filter)
             data = []
             for i in filter:
                 data.append(self.workspace_data[workspace_id][i])
@@ -218,7 +213,6 @@ class DataManager():
         n_clusters = max(labels) + 1
 
         if len(filter) > 0:
-            print(filter)
             data = []
             for i in filter:
                 data.append(self.workspace_data[workspace_id][i])

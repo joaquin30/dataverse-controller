@@ -20,7 +20,10 @@ class UIManager:
 
     def run(self):  
         with dpg.window(label="Dataverse controler") as win:
+            self.primary_win = win
             dpg.set_primary_window(win, True)
+            self.file_explorer = dpg.add_file_dialog(directory_selector=True, show=False, 
+                callback=self.create_tab_bar, width=700 ,height=400, modal=True)
             with dpg.window(modal=True, no_title_bar=True, show=False) as popup:
                 self.popup_id = popup
                 dpg.add_text("Nuevo espacio de trabajo")
@@ -45,7 +48,7 @@ class UIManager:
 
             with dpg.menu_bar():
                 with dpg.menu(label="Archivo"):
-                    dpg.add_menu_item(label="Cargar imágenes")
+                    dpg.add_menu_item(label="Cargar imágenes", callback=lambda: dpg.configure_item(self.file_explorer, show=True))
                     dpg.add_menu_item(label="Crear espacio de trabajo", callback=lambda: dpg.configure_item(self.popup_id, show=True))
                     dpg.add_menu_item(label="Eliminar espacio de trabajo actual", callback=self.delete_tab)
                     dpg.add_menu_item(label="Desconectar navegador", callback=self.conn_manager.disconnect)
@@ -55,19 +58,28 @@ class UIManager:
                     dpg.add_menu_item(label="Acerca de", callback=lambda: dpg.configure_item(self.about_id, show=True))
             
             with dpg.group(horizontal=True):
-                dpg.add_button(label="Cargar imágenes")
+                dpg.add_button(label="Cargar imágenes", callback=lambda: dpg.configure_item(self.file_explorer, show=True))
                 dpg.add_button(label="Crear espacio de trabajo", callback=lambda: dpg.configure_item(self.popup_id, show=True))
                 dpg.add_button(label="Eliminar espacio de trabajo actual", callback=self.delete_tab)
                 self.status_id = dpg.add_text("Navegador desconectado :(")
 
-            self.tab_bar_id = dpg.add_tab_bar()
-            self.next_tab_index = 1
+            self.tab_bar_id = None
 
         dpg.create_viewport(title="Dataverse Controller", width=self.WIDTH, height=self.HEIGHT)
         dpg.setup_dearpygui()
         dpg.show_viewport()
         dpg.start_dearpygui()
         dpg.destroy_context()
+
+    def create_tab_bar(self, sender, app_data):
+        if self.tab_bar_id != None:
+            dpg.delete_item(self.tab_bar_id)
+
+        self.next_tab_index = 1
+        self.tab_bar_id = dpg.add_tab_bar(parent=self.primary_win)
+        folder_path = app_data['file_path_name']
+        print("cargando", folder_path)
+        self.data_manager.load_folder(folder_path)
 
     def create_texture_registry(self, size):
         print("Cargando imágenes a la GPU")
@@ -95,6 +107,10 @@ class UIManager:
         return self.image_ids[index]
 
     def create_tab(self, algorithm, clustering):
+        if self.tab_bar_id == None:
+            dpg.configure_item(self.popup_id, show=False)
+            return
+        
         index = self.next_tab_index 
         self.next_tab_index += 1
         tab = TabManager(self, self.data_manager, self.conn_manager, index)
