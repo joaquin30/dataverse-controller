@@ -3,7 +3,7 @@ import utils
 from PIL import Image
 import numpy as np
 
-def tip(id: int, text: str):
+def tip(id: int, text: str) -> int:
     with dpg.tooltip(id):
         dpg.add_text(text)
     
@@ -405,7 +405,7 @@ class TabManager:
 
     ### CLUSTERIZACION ###
 
-    def create_hdbscan(self, parent):    
+    def create_hdbscan(self, parent):
         with dpg.group(parent=parent):
             tip(dpg.add_text("Parámetros HDBSCAN"), "Cambia los colores del grafico en el controlador y el navegador")
             min_cluster_size = dpg.add_input_int(label="min_cluster_size", default_value=5, width=self.PARAMETER_WIDTH)
@@ -496,6 +496,7 @@ class TabManager:
     def apply_hdbscan(self, min_cluster_size, min_samples, cluster_selection_epsilon, cluster_selection_method, filter=[]):
         self.labels = self.data_manager.apply_hdbscan(self.index, min_cluster_size, min_samples, cluster_selection_epsilon, cluster_selection_method, filter=filter)
         self.update_plot()
+        self.set_selection(range(20))
 
     def apply_kmeans(self, n_clusters, max_iter, init, algorithm, filter=[]):
         self.labels = self.data_manager.apply_kmeans(self.index, n_clusters, max_iter, init, algorithm, filter=filter)
