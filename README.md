@@ -1,7 +1,7 @@
 # Dataverse Controller
 
 Aplicación para visualizar conjuntos de imágenes que maneja las diferentes técnicas de reducción de dimensionalidad y clusterización para ser comparadas lado a lado
-Para usarse primero instale las librerias en `requirementes.txt` y ejecute `python main.py`. Puede usarse de manera individual o conectarse a un visualizador
+Para usarse primero instale las librerias en `requirements.txt` y ejecute `python main.py`. Puede usarse de manera individual o conectarse a un visualizador
 VR que se encuentra en <https://github.com/Nyanzey/Dataverse-Navigator>.
 
 ## Librerias usadas
@@ -39,6 +39,16 @@ VR que se encuentra en <https://github.com/Nyanzey/Dataverse-Navigator>.
 ![](images/6.png)
 
 ### Todo esto con guias para evitar perderse en el programa
+
+## Técnicas disponibles
+
+- UMAP
+- T-SNE
+- PCA
+- HDBSCAN
+- K-Means
+- OPTICS
+- Spectral
 
 ## Créditos
 
