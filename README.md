@@ -52,6 +52,6 @@ VR que se encuentra en <https://github.com/Nyanzey/Dataverse-Navigator>.
 
 ## Créditos
 
-- Bruno Fernandez
-- Fredy Quispe
-- Joaquin Pino
+- Bruno Fernandez Gutierrez (bruno.fernandez@ucsp.edu.pe)
+- Joaquin Pino Zavala (joaquin.pino@ucsp.edu.pe)
+- Fredy Quispe Neira (fredy.quispe@ucsp.edu.pe)
