@@ -3,6 +3,12 @@ import utils
 from PIL import Image
 import numpy as np
 
+def tip(id: int, text: str):
+    with dpg.tooltip(id):
+        dpg.add_text(text)
+    
+    return id
+
 class UIManager:
     WIDTH = 1280
     HEIGHT = 720
@@ -42,26 +48,34 @@ class UIManager:
                 dpg.add_text("Dataverse Controller")
                 dpg.add_separator()
                 dpg.add_text("Creado por:")
-                dpg.add_text("  - Bruno Fernandez\n  - Fredy Quispe\n  - Joaquin Pino")
+                dpg.add_text("  Bruno Fernandez\n  Fredy Quispe\n  Joaquin Pino")
                 dpg.add_spacer(height=5)
                 dpg.add_button(label="Salir", callback=lambda: dpg.configure_item(self.about_id, show=False))
 
             with dpg.menu_bar():
                 with dpg.menu(label="Archivo"):
-                    dpg.add_menu_item(label="Cargar imágenes", callback=lambda: dpg.configure_item(self.file_explorer, show=True))
-                    dpg.add_menu_item(label="Crear espacio de trabajo", callback=lambda: dpg.configure_item(self.popup_id, show=True))
-                    dpg.add_menu_item(label="Eliminar espacio de trabajo actual", callback=self.delete_tab)
-                    dpg.add_menu_item(label="Desconectar navegador", callback=self.conn_manager.disconnect)
-
+                    tip(dpg.add_menu_item(label="Cargar imágenes", callback=lambda: dpg.configure_item(self.file_explorer, show=True)),
+                        "Elige una carpeta con imágenes JPEG o PNG y genera dataset.mpack si no existe")
+                    tip(dpg.add_menu_item(label="Desconectar navegador", callback=self.conn_manager.disconnect),
+                        "Resetea la conexion con el navegador para que este sea reiniciado")
+                
+                with dpg.menu(label="Opciones"):
+                    tip(dpg.add_menu_item(label="Crear espacio de trabajo", callback=lambda: dpg.configure_item(self.popup_id, show=True)),
+                        "Elige entre múltiples algoritmos y genera un cubo en el navegador")
+                    tip(dpg.add_menu_item(label="Eliminar espacio de trabajo actual", callback=self.delete_tab),
+                        "Elimina la pestaña activa y el cubo a la que corresponde en el navegador")
+                
                 with dpg.menu(label="Ayuda"):
-                    dpg.add_menu_item(label="Activar tutorial")
                     dpg.add_menu_item(label="Acerca de", callback=lambda: dpg.configure_item(self.about_id, show=True))
             
             with dpg.group(horizontal=True):
-                dpg.add_button(label="Cargar imágenes", callback=lambda: dpg.configure_item(self.file_explorer, show=True))
-                dpg.add_button(label="Crear espacio de trabajo", callback=lambda: dpg.configure_item(self.popup_id, show=True))
-                dpg.add_button(label="Eliminar espacio de trabajo actual", callback=self.delete_tab)
-                self.status_id = dpg.add_text("Navegador desconectado :(")
+                tip(dpg.add_button(label="Cargar imágenes", callback=lambda: dpg.configure_item(self.file_explorer, show=True)),
+                    "Elige una carpeta con imágenes JPEG o PNG y genera dataset.mpack si no existe")
+                tip(dpg.add_button(label="Crear espacio de trabajo", callback=lambda: dpg.configure_item(self.popup_id, show=True)),
+                    "Elige entre múltiples algoritmos y genera un cubo en el navegador")
+                tip(dpg.add_button(label="Eliminar espacio de trabajo actual", callback=self.delete_tab),
+                    "Elimina la pestaña activa y el cubo a la que corresponde en el navegador")
+                self.status_id = tip(dpg.add_text("Navegador desconectado :("), "Indica si el navegador se encuentra activo o no")
 
             self.tab_bar_id = None
 
@@ -187,7 +201,7 @@ class TabManager:
                             raise Exception("algoritmo de clusterizacion no existe")
                         
                         dpg.add_separator()
-                        dpg.add_text("Imágenes seleccionadas (Navegador)")
+                        tip(dpg.add_text("Imágenes seleccionadas (Navegador)"), "Presiona las imágenes para eliminarlas de la selección")
                         with dpg.group() as table_parent_id:
                             self.table_parent_id = table_parent_id
                             self.table_id = dpg.add_table(header_row=False)
@@ -329,7 +343,7 @@ class TabManager:
 
     def create_umap(self, parent):
         with dpg.group(parent=parent):
-            dpg.add_text("Parámetros UMAP")
+            tip(dpg.add_text("Parámetros UMAP"), "Cambie los parámetros y presione \"Aplicar\" para ver los resultados")
             n_neighbors = dpg.add_input_int(label="n_neighbors", default_value=15, width=self.PARAMETER_WIDTH)
             min_dist = dpg.add_input_float(label="min_dist", default_value=0.01, width=self.PARAMETER_WIDTH)
             with dpg.group(horizontal=True):
@@ -337,13 +351,12 @@ class TabManager:
                 dpg.add_text("metric")
 
             dpg.add_spacer(height=5)
-            dpg.add_button(label="Aplicar", callback=lambda: self.apply_umap(dpg.get_value(n_neighbors),
-                                                                             dpg.get_value(min_dist),
-                                                                             dpg.get_value(metric)))
+            tip(dpg.add_button(label="Aplicar", callback=lambda: self.apply_umap(dpg.get_value(n_neighbors),
+                dpg.get_value(min_dist), dpg.get_value(metric))), "Genera puntos en 2D y los plotea y genera puntos en 3D y los envia al navegador")
     
     def create_tsne(self, parent):
         with dpg.group(parent=parent):
-            dpg.add_text("Parámetros T-SNE")
+            tip(dpg.add_text("Parámetros T-SNE"), "Cambie los parámetros y presione \"Aplicar\" para ver los resultados")
             learning_rate = dpg.add_input_float(label="learning_rate", default_value=200.0, width=self.PARAMETER_WIDTH)
             perplexity = dpg.add_input_float(label="perplexity", default_value=30.0, width=self.PARAMETER_WIDTH)
             early_exaggeration = dpg.add_input_float(label="early_exaggeration", default_value=12.0, width=self.PARAMETER_WIDTH)
@@ -352,14 +365,13 @@ class TabManager:
                 dpg.add_text("metric")
 
             dpg.add_spacer(height=5)
-            dpg.add_button(label="Aplicar", callback=lambda: self.apply_tsne(dpg.get_value(learning_rate),
-                                                                             dpg.get_value(perplexity),
-                                                                             dpg.get_value(early_exaggeration),
-                                                                             dpg.get_value(metric)))
+            tip(dpg.add_button(label="Aplicar", callback=lambda: self.apply_tsne(dpg.get_value(learning_rate),
+                dpg.get_value(perplexity), dpg.get_value(early_exaggeration), dpg.get_value(metric))),
+                "Genera puntos en 2D y los plotea y genera puntos en 3D y los envia al navegador")
 
     def create_pca(self, parent):
         with dpg.group(parent=parent):
-            dpg.add_text("Parámetros PCA")
+            tip(dpg.add_text("Parámetros PCA"), "Cambie los parámetros y presione \"Aplicar\" para ver los resultados")
             whiten = dpg.add_checkbox(label="whiten", default_value=True) # width=self.PARAMETER_WIDTH produce an error
             tolerance = dpg.add_input_float(label="tolerance", default_value=0.0, width=self.PARAMETER_WIDTH)
             with dpg.group(horizontal=True):
@@ -367,9 +379,8 @@ class TabManager:
                 dpg.add_text("svd_solver")
 
             dpg.add_spacer(height=5)
-            dpg.add_button(label="Aplicar", callback=lambda: self.apply_pca(dpg.get_value(whiten),
-                                                                            dpg.get_value(tolerance),
-                                                                            dpg.get_value(svd_solver)))
+            tip(dpg.add_button(label="Aplicar", callback=lambda: self.apply_pca(dpg.get_value(whiten),
+                dpg.get_value(tolerance), dpg.get_value(svd_solver))), "Genera puntos en 2D y los plotea y genera puntos en 3D y los envia al navegador")
 
     def clear_plot(self):
         if len(self.labels) == 0:
@@ -396,7 +407,7 @@ class TabManager:
 
     def create_hdbscan(self, parent):    
         with dpg.group(parent=parent):
-            dpg.add_text("Parámetros HDBSCAN")
+            tip(dpg.add_text("Parámetros HDBSCAN"), "Cambia los colores del grafico en el controlador y el navegador")
             min_cluster_size = dpg.add_input_int(label="min_cluster_size", default_value=5, width=self.PARAMETER_WIDTH)
             min_samples = dpg.add_input_int(label="min_samples", default_value=5, width=self.PARAMETER_WIDTH)
             cluster_selection_epsilon = dpg.add_input_float(label="cluster_selection_epsilon", default_value=0, width=self.PARAMETER_WIDTH)
@@ -406,20 +417,17 @@ class TabManager:
             
             dpg.add_spacer(height=5)
             with dpg.group(horizontal=True):
-                dpg.add_button(label="Aplicar", callback=lambda: self.apply_hdbscan(dpg.get_value(min_cluster_size),
-                                                                                    dpg.get_value(min_samples),
-                                                                                    dpg.get_value(cluster_selection_epsilon),
-                                                                                    dpg.get_value(cluster_selection_method)))
-                dpg.add_button(label="Limpiar clustering", callback=self.clear_clustering)
-            dpg.add_button(label="Aplicar (Solo selección)", callback=lambda: self.apply_hdbscan(dpg.get_value(min_cluster_size),
-                                                                                    dpg.get_value(min_samples),
-                                                                                    dpg.get_value(cluster_selection_epsilon),
-                                                                                    dpg.get_value(cluster_selection_method),
-                                                                                    filter=self.get_selection()))
+                tip(dpg.add_button(label="Aplicar", callback=lambda: self.apply_hdbscan(dpg.get_value(min_cluster_size),
+                    dpg.get_value(min_samples), dpg.get_value(cluster_selection_epsilon), dpg.get_value(cluster_selection_method))),
+                    "Clusteriza los puntos y envia los colores al navegador")
+                tip(dpg.add_button(label="Limpiar clustering", callback=self.clear_clustering), "Reinicia la clusterizacion")
+            tip(dpg.add_button(label="Aplicar (Solo selección)", callback=lambda: self.apply_hdbscan(dpg.get_value(min_cluster_size),
+                dpg.get_value(min_samples), dpg.get_value(cluster_selection_epsilon), dpg.get_value(cluster_selection_method), filter=self.get_selection())),
+                "Clusteriza los puntos y aplica una segunda clusterización a los puntos seleccionados")
     
     def create_kmeans(self, parent):
         with dpg.group(parent=parent):
-            dpg.add_text("Parámetros K-Means")
+            tip(dpg.add_text("Parámetros K-Means"), "Cambia los colores del grafico en el controlador y el navegador")
             n_clusters = dpg.add_input_int(label="n_clusters", default_value=8, width=self.PARAMETER_WIDTH)
             max_iter = dpg.add_input_int(label="max_iter", default_value=300, width=self.PARAMETER_WIDTH)
             with dpg.group(horizontal=True):
@@ -431,20 +439,17 @@ class TabManager:
 
             dpg.add_spacer(height=5)
             with dpg.group(horizontal=True):
-                dpg.add_button(label="Aplicar", callback=lambda: self.apply_kmeans(dpg.get_value(n_clusters),
-                                                                                   dpg.get_value(max_iter),
-                                                                                   dpg.get_value(init),
-                                                                                   dpg.get_value(algorithm)))
-                dpg.add_button(label="Limpiar clustering", callback=self.clear_clustering)
-            dpg.add_button(label="Aplicar (Solo selección)", callback=lambda: self.apply_kmeans(dpg.get_value(n_clusters),
-                                                                                   dpg.get_value(max_iter),
-                                                                                   dpg.get_value(init),
-                                                                                   dpg.get_value(algorithm)),
-                                                                                   filter=self.get_selection())
+                tip(dpg.add_button(label="Aplicar", callback=lambda: self.apply_kmeans(dpg.get_value(n_clusters), 
+                    dpg.get_value(max_iter),  dpg.get_value(init), dpg.get_value(algorithm))),
+                    "Clusteriza los puntos y envia los colores al navegador")
+                tip(dpg.add_button(label="Limpiar clustering", callback=self.clear_clustering), "Reinicia la clusterizacion")
+            tip(dpg.add_button(label="Aplicar (Solo selección)", callback=lambda: self.apply_kmeans(dpg.get_value(n_clusters),
+                dpg.get_value(max_iter), dpg.get_value(init), dpg.get_value(algorithm), filter=self.get_selection())),
+                "Clusteriza los puntos y aplica una segunda clusterización a los puntos seleccionados")
 
     def create_optics(self, parent):
         with dpg.group(parent=parent):
-            dpg.add_text("Parámetros OPTICS")
+            tip(dpg.add_text("Parámetros OPTICS"), "Cambia los colores del grafico en el controlador y el navegador")
             min_samples = dpg.add_input_int(label="min_samples", default_value=5, width=self.PARAMETER_WIDTH, min_value=2, min_clamped=True)
             max_eps = dpg.add_input_float(label="max_eps", default_value=float("inf"), width=self.PARAMETER_WIDTH)
             with dpg.group(horizontal=True):
@@ -456,20 +461,17 @@ class TabManager:
 
             dpg.add_spacer(height=5)
             with dpg.group(horizontal=True):
-                dpg.add_button(label="Aplicar", callback=lambda: self.apply_optics(dpg.get_value(min_samples),
-                                                                                    dpg.get_value(max_eps),
-                                                                                    dpg.get_value(metric),
-                                                                                    dpg.get_value(cluster_method)))
-                dpg.add_button(label="Limpiar clustering", callback=self.clear_clustering)
-            dpg.add_button(label="Aplicar (Solo selección)", callback=lambda: self.apply_optics(dpg.get_value(min_samples),
-                                                                                    dpg.get_value(max_eps),
-                                                                                    dpg.get_value(metric),
-                                                                                    dpg.get_value(cluster_method),
-                                                                                    filter=self.get_selection()))
+                tip(dpg.add_button(label="Aplicar", callback=lambda: self.apply_optics(dpg.get_value(min_samples),
+                    dpg.get_value(max_eps), dpg.get_value(metric), dpg.get_value(cluster_method))),
+                    "Clusteriza los puntos y envia los colores al navegador")
+                tip(dpg.add_button(label="Limpiar clustering", callback=self.clear_clustering), "Reinicia la clusterizacion")
+            tip(dpg.add_button(label="Aplicar (Solo selección)", callback=lambda: self.apply_optics(dpg.get_value(min_samples),
+                dpg.get_value(max_eps), dpg.get_value(metric), dpg.get_value(cluster_method), filter=self.get_selection())),
+                "Clusteriza los puntos y aplica una segunda clusterización a los puntos seleccionados")
 
     def create_spectral(self, parent):
         with dpg.group(parent=parent):
-            dpg.add_text("Parámetros Spectral Clustering")
+            tip(dpg.add_text("Parámetros Spectral Clustering"), "Cambia los colores del grafico en el controlador y el navegador")
             n_clusters = dpg.add_input_int(label="n_clusters", default_value=8, width=self.PARAMETER_WIDTH)
             with dpg.group(horizontal=True):
                 eigen_solver = dpg.add_combo(items=["arpack", "lobpcg", "amg"], default_value="arpack", width=self.PARAMETER_WIDTH)
@@ -483,16 +485,13 @@ class TabManager:
 
             dpg.add_spacer(height=5)
             with dpg.group(horizontal=True):
-                dpg.add_button(label="Aplicar", callback=lambda: self.apply_spectral(dpg.get_value(n_clusters),
-                                                                                    dpg.get_value(eigen_solver),
-                                                                                    dpg.get_value(affinity),
-                                                                                    dpg.get_value(assign_labels)))
-                dpg.add_button(label="Limpiar clustering", callback=self.clear_clustering)
-            dpg.add_button(label="Aplicar (Solo selección)", callback=lambda: self.apply_spectral(dpg.get_value(n_clusters),
-                                                                                    dpg.get_value(eigen_solver),
-                                                                                    dpg.get_value(affinity),
-                                                                                    dpg.get_value(assign_labels),
-                                                                                    filter=self.get_selection()))
+                tip(dpg.add_button(label="Aplicar", callback=lambda: self.apply_spectral(dpg.get_value(n_clusters),
+                    dpg.get_value(eigen_solver), dpg.get_value(affinity), dpg.get_value(assign_labels))),
+                    "Clusteriza los puntos y envia los colores al navegador")
+                tip(dpg.add_button(label="Limpiar clustering", callback=self.clear_clustering), "Reinicia la clusterizacion")
+            tip(dpg.add_button(label="Aplicar (Solo selección)", callback=lambda: self.apply_spectral(dpg.get_value(n_clusters),
+                dpg.get_value(eigen_solver), dpg.get_value(affinity), dpg.get_value(assign_labels), filter=self.get_selection())),
+                "Clusteriza los puntos y aplica una segunda clusterización a los puntos seleccionados")
 
     def apply_hdbscan(self, min_cluster_size, min_samples, cluster_selection_epsilon, cluster_selection_method, filter=[]):
         self.labels = self.data_manager.apply_hdbscan(self.index, min_cluster_size, min_samples, cluster_selection_epsilon, cluster_selection_method, filter=filter)
